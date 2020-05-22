@@ -1,17 +1,19 @@
 const TelegramBot = require('node-telegram-bot-api');
+const mongoose = require('mongoose');
 const axios = require('axios');
 const config = require('./config');
 const helper = require('./helper');
 const kb = require('./keyboard-buttons');
-const keyboard = require('./keyboard')
+const keyboard = require('./keyboard');
 
 
 helper.logStart()
 
-// const messages = {
-//   male: 'this is male',
-//   female: 'this is female',
-// }
+mongoose.connect(config.DB_URL, {
+  useMongoClient: true
+})
+  .then(() => console.log('MongoDB connected'))
+  .catch((err) => console.log(err))
 
 
 const bot = new TelegramBot(config.TOKEN, {polling: true});
@@ -19,11 +21,23 @@ const bot = new TelegramBot(config.TOKEN, {polling: true});
 bot.on('message',msg => {
   console.log('Working',msg.from.first_name);
 
+  const chatId = helper.getChatId(msg);
+
   switch (msg.text) {
     case kb.sex.female:
+      bot.sendMessage(chatId, `Сколько часов вы спите?`, {
+        reply_markup: {keyboard: keyboard.sleep}
+      })
       break
     case kb.sex.male:
+      bot.sendMessage(chatId, `Сколько часов вы спите?`, {
+        reply_markup: {keyboard: keyboard.sleep}
+        })
       break
+    case kb.back:
+      bot.sendMessage(chatId, `К предыдущему вопросу`, {
+        reply_markup: {keyboard: keyboard.back}
+        })
 
   }
 })
