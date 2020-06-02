@@ -8,7 +8,12 @@ const keyboard = require('./keyboard');
 const messages = require('./messages');
 
 
-helper.logStart()
+helper.logStart();
+
+function sendInformationByQuery(chatId, query) {
+  const message = messages.information[query];
+  bot.sendMessage(chatId, message);
+}
 
 // mongoose.connect(config.DB_URL, {
 //   useMongoClient: true
@@ -22,68 +27,119 @@ helper.logStart()
 
 // database.information.forEach(f => new Inform(f).save());
 
+// ПОКА НЕНУЖНО
+// bot.on('message', msg => {
+//   console.log('Working', msg.from.first_name);
+
+// const chatId = helper.getChatId(msg);
+
 // ======================================================
 
 
-const bot = new TelegramBot(config.TOKEN, {polling: true});
+const bot = new TelegramBot(config.TOKEN, { polling: true });
 
-  bot.on('message',msg => {
-    console.log('Working',msg.from.first_name);
+bot.onText(/\/start/, (msg, match) => {
+  const chatId = msg.chat.id;
 
-    bot.onText(/\/start/, (msg, match) => {
-      const chatId = msg.chat.id;
-    
-      const text = `Здравствуйте, ${msg.from.first_name}\nУкажите свой пол`
-      bot.sendMessage(helper.getChatId(msg), text, {
+  const text = `Здравствуйте, ${msg.from.first_name}\nУкажите свой пол`;
+
+  bot.sendMessage(helper.getChatId(msg), text, {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: 'Женский', callback_data: 'sex' }],
+        [{ text: 'Мужской', callback_data: 'sex' }]
+      ]
+    }
+  })
+});
+
+
+bot.on('callback_query', (query) => {
+  const chatId = query.message.chat.id;
+  console.log(query);
+
+  switch (query.data) {
+    case 'sex':
+      bot.sendMessage(chatId, `Сколько часов вы спите?`, {
         reply_markup: {
-          keyboard: keyboard.sex,
+          inline_keyboard: [
+            [{ text: 'Меньше 7 часов', callback_data: 'sleep' }],
+            [{ text: 'Не меньше 8 часов', callback_data: 'sleep' }],
+            [{ text: '9 часов и более', callback_data: 'sleep' }],
+          ]
         }
       })
-    })
+      break
 
-  const chatId = helper.getChatId(msg);
-
-  switch (msg.text) {
-    case kb.sex.female:
-      bot.sendMessage(chatId, `Сколько часов вы спите?`, {
-        reply_markup: {keyboard: keyboard.sleep}
+    case 'sleep':
+      bot.sendMessage(chatId, `Сколько вы выпиваете воды за день?`, {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: 'Меньше чем 2 литра', callback_data: 'water' }],
+            [{ text: 'Не меньше чем 2 литра', callback_data: 'water' }],
+            [{ text: 'Больше чем 3 литра', callback_data: 'water' }],
+          ]
+        }
       })
       break
-    case kb.sleep.short:
-      sendInformationByQuery(chatId, "sleepShort")
-      break
-    case kb.sleep.normal:
-      sendSleepByQuery(chatId)
-      break
-    case kb.sleep.long: 
-      sendSleepByQuery(chatId)
-      break
-
-
-    case kb.sex.male:
-      bot.sendMessage(chatId, `Сколько часов вы спите?`, {
-        reply_markup: {keyboard: keyboard.sleep}
-        })
-      break
-
-
-    // case kb.back:
-    //   bot.sendMessage(chatId, `К предыдущему вопросу`, {
-    //     reply_markup: {keyboard: keyboard.back}
-    //     })
-
   }
-})
-
-//==========================================================
-
-function sendInformationByQuery(chatId, query) {
-  const message = messages.information[query];
-  bot.sendMessage(chatId, message);
-}
 
 
+  bot.on('callback_query', (query) => {
+    const chatId = query.message.chat.id; 
+      
+      switch (msg.text) {
+        case 'sleepShort':
+          sendInformationByQuery(chatId, "sleepShort")
+        // case kb.sleep.long:
+        //   sendInformationByQuery(chatId, "recommendShortSleep")
 
+        //   break
+        case kb.sleep.normal:
+          sendInformationByQuery(chatId, "sleepNormal")
+          break
+        case kb.sleep.long:
+          sendInformationByQuery(chatId, "sleepLong")
+          break
+        // case kb.sleep:
+        //   bot.sendMessage(chatId, `Сколько вы выпиваете воды за день?`, {
+        //     reply_markup: { keyboard: keyboard.water }
+        //   })
+        //   break
+        // case kb.water.little:
+        //   sendInformationByQuery(chatId, "waterLittle")
+        //   break
+        // case kb.water.normal:
+        //   sendInformationByQuery(chatId, "waterNormal")
+        //   break
+        // case kb.water.much:
+        //   sendInformationByQuery(chatId, "waterMuch")
+        //   break
+        // default:
+        //   sendInformationByQuery(chatId, "waterMuch");
+      }
+    });
+
+    // switch (msg.text) {
+    //   case kb.water.little:
+    //     bot.sendMessage(chatId, `Сколько вы выпиваете воды за день?`, {
+    //       reply_markup: {keyboard: keyboard.water}
+    //     })
+    //     break
+    //   case kb.water.little:
+    //     sendInformationByQuery(chatId, "waterLittle")
+    //     break
+    //   case kb.water.normal:
+    //     sendInformationByQuery(chatId, "waterNormal")
+    //     break
+    //   case kb.water.much: 
+    //   sendInformationByQuery(chatId, "waterMuch")
+    //     break
+    // }
+  });
+
+  //==========================================================
+// });
 
   // if (msg.text === 'Женский') {
   //   bot.sendMessage(chatId, 'Женский', {
@@ -107,7 +163,7 @@ function sendInformationByQuery(chatId, query) {
 //   bot.sendMessage(from.id, messages[data])
 
 //   one_time_keyboard = True
-    
+
 
 //   if (data === 'female') {
 //     bot.sendMessage(from.id, 'You are female')
@@ -124,5 +180,6 @@ function sendInformationByQuery(chatId, query) {
 
 // {
 //   text:'Мужской',
-//   callback_data: 'male'
-// },
+//   callback_data: 'male'}
+
+
